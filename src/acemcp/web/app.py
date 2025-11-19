@@ -137,6 +137,62 @@ def create_app() -> FastAPI:
 
         return {"status": "running", "project_count": project_count, "storage_path": str(config.index_storage_path)}
 
+    @app.post("/api/validate-token")
+    async def validate_token(config_update: ConfigUpdate) -> dict:
+        """Validate token by making a test request to the API.
+
+        Args:
+            config_update: Configuration with base_url and token to validate
+
+        Returns:
+            Validation result with status and message
+
+        """
+        try:
+            import httpx
+
+            # Use provided values or fall back to current config
+            config = get_config()
+            base_url = config_update.base_url or config.base_url
+            token = config_update.token or config.token
+
+            if not base_url or not token:
+                return {"status": "error", "message": "BASE_URL and TOKEN are required"}
+
+            # Make a test request to the API
+            logger.info(f"Validating token for base_url: {base_url}")
+
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Test with an empty batch upload request
+                response = await client.post(
+                    f"{base_url.rstrip('/')}/batch-upload",
+                    headers={"Authorization": f"Bearer {token}"},
+                    json={"blobs": []},
+                )
+
+                if response.status_code == 200:
+                    logger.info("Token validation successful")
+                    return {"status": "success", "message": "Token is valid and working!"}
+                elif response.status_code == 401:
+                    logger.warning("Token validation failed: Unauthorized")
+                    return {"status": "error", "message": "Token is invalid or expired (401 Unauthorized)"}
+                elif response.status_code == 403:
+                    logger.warning("Token validation failed: Forbidden")
+                    return {"status": "error", "message": "Token does not have permission (403 Forbidden)"}
+                else:
+                    logger.warning(f"Token validation returned unexpected status: {response.status_code}")
+                    return {"status": "error", "message": f"Unexpected response: {response.status_code} - {response.text[:100]}"}
+
+        except httpx.TimeoutException:
+            logger.warning("Token validation timed out")
+            return {"status": "error", "message": "Request timed out. Please check your BASE_URL"}
+        except httpx.ConnectError:
+            logger.warning("Token validation connection failed")
+            return {"status": "error", "message": "Cannot connect to the API. Please check your BASE_URL"}
+        except Exception as e:
+            logger.exception("Token validation failed with exception")
+            return {"status": "error", "message": f"Validation failed: {str(e)}"}
+
     @app.get("/api/tools")
     async def list_tools() -> dict:
         """List available tools for debugging.
