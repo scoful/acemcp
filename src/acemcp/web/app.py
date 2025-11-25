@@ -173,15 +173,14 @@ def create_app() -> FastAPI:
                 if response.status_code == 200:
                     logger.info("Token validation successful")
                     return {"status": "success", "message": "Token is valid and working!"}
-                elif response.status_code == 401:
+                if response.status_code == 401:
                     logger.warning("Token validation failed: Unauthorized")
                     return {"status": "error", "message": "Token is invalid or expired (401 Unauthorized)"}
-                elif response.status_code == 403:
+                if response.status_code == 403:
                     logger.warning("Token validation failed: Forbidden")
                     return {"status": "error", "message": "Token does not have permission (403 Forbidden)"}
-                else:
-                    logger.warning(f"Token validation returned unexpected status: {response.status_code}")
-                    return {"status": "error", "message": f"Unexpected response: {response.status_code} - {response.text[:100]}"}
+                logger.warning(f"Token validation returned unexpected status: {response.status_code}")
+                return {"status": "error", "message": f"Unexpected response: {response.status_code} - {response.text[:100]}"}
 
         except httpx.TimeoutException:
             logger.warning("Token validation timed out")

@@ -2,8 +2,9 @@
 
 import argparse
 import asyncio
-import sys
 from io import TextIOWrapper
+import socket
+import sys
 
 import anyio
 from loguru import logger
@@ -123,8 +124,8 @@ async def main(base_url: str | None = None, token: str | None = None, web_port: 
             logger.info(f"Starting web management interface on port {web_port}")
             web_task = asyncio.create_task(run_web_server(web_port))
 
-        stdin = anyio.wrap_file(TextIOWrapper(sys.stdin.buffer, encoding="utf-8", newline='\n'))
-        stdout = anyio.wrap_file(TextIOWrapper(sys.stdout.buffer, encoding="utf-8", newline='\n'))
+        stdin = anyio.wrap_file(TextIOWrapper(sys.stdin.buffer, encoding="utf-8", newline="\n"))
+        stdout = anyio.wrap_file(TextIOWrapper(sys.stdout.buffer, encoding="utf-8", newline="\n"))
 
         async with stdio_server(stdin=stdin, stdout=stdout) as (read_stream, write_stream):
             await app.run(read_stream, write_stream, app.create_initialization_options())
@@ -136,6 +137,28 @@ async def main(base_url: str | None = None, token: str | None = None, web_port: 
         if web_task:
             web_task.cancel()
         await shutdown_index_manager()
+
+
+def is_port_listening(
+    port: int,
+    host: str = "127.0.0.1",
+) -> bool:
+    """检测指定主机的端口是否处于监听状态（TCP）
+    :param host: 目标主机，默认本地回环地址
+    :param port: 目标端口
+    :return: 端口监听返回True，否则False.
+    """
+    try:
+        # 创建TCP socket对象
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # 设置超时时间
+            s.settimeout(1)
+            # 尝试连接端口
+            s.connect((host, port))
+        return True
+    except (TimeoutError, ConnectionRefusedError, OSError):
+        # 超时、连接被拒绝、系统错误（如端口无效）均视为未监听
+        return False
 
 
 def run() -> None:
