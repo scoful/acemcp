@@ -46,13 +46,14 @@ async def list_tools() -> list[Tool]:
                     },
                     "query": {
                         "type": "string",
-                        "description": "Natural language search query to find relevant code context. This tool performs"
-                        " semantic search and returns code snippets that match your query. Examples: "
-                        "'logging configuration setup initialization logger' (finds logging setup code), "
-                        "'user authentication login' (finds auth-related code), 'database connection pool' "
-                        "(finds DB connection code), 'error handling exception' (finds error handling patterns), "
-                        "'API endpoint routes' (finds API route definitions). "
-                        "The tool returns formatted text snippets with file paths and line numbers showing where the relevant code is located.",
+                        "description": """Provide a clear natural language description of the code behavior, workflow, or issue you want to locate. You may also add optional keywords to improve semantic matching.
+Recommended format:
+Natural language description + optional keywords
+Examples:
+“I want to find where the server handles chunk merging in the file upload process. Keywords: upload chunk merge, file service”
+“Locate where the system refreshes cached data after user permissions are updated. Keywords: permission update, cache refresh”
+“Find the initialization flow of message queue consumers during startup. Keywords: mq consumer init, subscribe”
+“Show me how configuration hot-reload is triggered and applied in the code. Keywords: config reload, hot update”""",
                     },
                 },
                 "required": ["project_root_path", "query"],
